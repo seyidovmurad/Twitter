@@ -1,0 +1,101 @@
+﻿<Page x:Class="Client.LoginView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:Client"
+      mc:Ignorable="d" 
+      TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+     TextElement.FontWeight="Regular"
+     TextElement.FontSize="13"
+     TextOptions.TextFormattingMode="Ideal"
+     TextOptions.TextRenderingMode="Auto"
+     Background="{DynamicResource MaterialDesignPaper}"
+     FontFamily="{DynamicResource MaterialDesignFont}"
+      xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="LoginView">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        
+        <!--Login-->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="Login" FontSize="20" HorizontalAlignment="Left"/>
+            
+            <!--Username-->
+            <TextBox
+                x:Name="UsernameTxtb"
+                Width="200"
+                Margin="0,10"
+                materialDesign:HintAssist.Hint="Username">
+            </TextBox>
+            
+            <!--Password-->
+            <PasswordBox
+                x:Name="PasswordTxtb"
+                materialDesign:HintAssist.Hint="Password"
+                materialDesign:TextFieldAssist.HasClearButton="True"/>
+            
+            <!--Login Button-->
+            <Button
+                x:Name="LoginBtn"
+                Margin="0, 10"
+                Style="{StaticResource MaterialDesignRaisedDarkButton}"
+                ToolTip="Resource name: MaterialDesignRaisedLightDarkButton"
+                Content="Login"
+                Click="LoginBtn_Click"
+                IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" />
+        </StackPanel>
+
+        <!--Sign Up-->
+
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="Sign Up" FontSize="20" HorizontalAlignment="Left"/>
+
+            <!--Name-->
+            <TextBox
+                x:Name="NameTxtb"
+                Width="200"
+                Margin="0,5"
+                materialDesign:HintAssist.Hint="Name">
+            </TextBox>
+
+            <!--Surname-->
+            <TextBox
+                x:Name="SurnameTxtb"
+                Width="200"
+                Margin="0,5"
+                materialDesign:HintAssist.Hint="Surname">
+            </TextBox>
+
+            <!--Username-->
+            <TextBox
+                x:Name="UsernameTxtb2"
+                Width="200"
+                Margin="0,5"
+                materialDesign:HintAssist.Hint="Username">
+            </TextBox>
+
+            <!--Password-->
+            <PasswordBox
+                x:Name="PasswordTxtb2"
+                materialDesign:HintAssist.Hint="Password"
+                Margin="0,5"
+                materialDesign:TextFieldAssist.HasClearButton="True"/>
+
+            <!--SignUp Button-->
+            <Button
+                x:Name="SignUpBtn"
+                Margin="0, 10"
+                Style="{StaticResource MaterialDesignRaisedDarkButton}"
+                ToolTip="Resource name: MaterialDesignRaisedLightDarkButton"
+                Content="Sign Up"
+                Click="SignUpBtn_Click"
+                IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" />
+        </StackPanel>
+    </Grid>
+</Page>

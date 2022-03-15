@@ -2,11 +2,11 @@
 using Newtonsoft.Json;
 using Server.Data;
 using Server.Models;
-using System;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Server
 {
@@ -28,56 +28,65 @@ namespace Server
             Hub.Start();
         }
 
-        private static void Get(HttpListenerContext context)
+        private static async Task Get(HttpListenerContext context)
         {
             var request = context.Request;
             var response = context.Response;
-            var id = request.QueryString["id"];
-            var res = client.GetAsync($"{uri}?id={id}").GetAwaiter().GetResult();
+            var username = request.QueryString["username"] ?? "all";
+            var search = request.QueryString["search"] ?? "";
+            var isLogin = bool.Parse(request.QueryString["login"] ?? "false");
+            HttpResponseMessage res = null;
+            try
+            {
+                res = await client.GetAsync($"{uri}{request.RawUrl}");
+            }
+            catch { }
             var sw = new StreamWriter(response.OutputStream);
 
-            if (res.StatusCode == HttpStatusCode.NotFound)
+            if (res == null || res.StatusCode == HttpStatusCode.NotFound)
             {
-                if (int.TryParse(id, out int result))
+                if (username == "all")
                 {
-                    if(result == -1)
+                    var users = DbContext.User.Where(u => u.Name.Contains(search) || u.Username.Contains(search) || u.Surname.Contains(search)).ToList();
+                    if (users.Count == 0)
                     {
-                        var users = DbContext.User.Include(u => u.Tweets).ToList();
-                        if(users == null)
-                        {
-                            response.StatusCode = (int)HttpStatusCode.NotFound;
-                            return;
-                        }
+                        response.StatusCode = (int)HttpStatusCode.NotFound;
+                        return;
+                    }
 
-                        sw.Write(JsonConvert.SerializeObject(users));
-                        sw.Close();
-                    }
-                    else
-                    {
-                        var user = DbContext.User.Include(u => u.Tweets).FirstOrDefault(u => u.Id == result);
-                        if (user == null)
-                        {
-                            response.StatusCode = (int)HttpStatusCode.NotFound;
-                            return;
-                        }
-                        IncreaseViewCount(user);
-                        TrySaveCasheServer(user);
-                        sw.Write(JsonConvert.SerializeObject(user));
-                        sw.Close();
-                    }
+                    sw.Write(JsonConvert.SerializeObject(users));
+                    sw.Close();
                 }
                 else
                 {
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    return;
+                    var user = DbContext.User.AsNoTracking().Include(u => u.Tweets).FirstOrDefault(u => u.Username == username);
+                    if (user == null)
+                    {
+                        response.StatusCode = (int)HttpStatusCode.NotFound;
+                        return;
+                    }
+                    if (!isLogin)
+                    {
+                        IncreaseViewCount(user);
+                        await TrySaveCasheServer(user);
+                    }
+                    sw.Write(JsonConvert.SerializeObject(user));
+                    sw.Close();
                 }
             }
-            else if(res.StatusCode == HttpStatusCode.OK)
+            else if (res.StatusCode == HttpStatusCode.OK)
             {
-                var str = res.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                var user = JsonConvert.DeserializeObject<User>(str);
-                IncreaseViewCount(user);
-                TrySaveCasheServer(user);
+                var str = await res.Content.ReadAsStringAsync();
+
+                if (username != "all")
+                {
+                    var user = JsonConvert.DeserializeObject<User>(str);
+                    if (!isLogin)
+                    {
+                        IncreaseViewCount(user);
+                        await TrySaveCasheServer(user);
+                    }
+                }
                 sw.Write(str);
             }
             else
@@ -129,36 +138,84 @@ namespace Server
         private static void Post(HttpListenerContext context)
         {
             var req = context.Request;
+            var title = req.QueryString["title"];
+            var username = req.QueryString["username"] ?? "";
             var sr = new StreamReader(req.InputStream);
             var json = sr.ReadToEnd();
-
-            User user = null;
-            try
+            if (title == "user")
             {
-                user = JsonConvert.DeserializeObject<User>(json);
-            }
-            catch
-            {
-                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                return;
-            }
-
-            if (user != null)
-            {
+                User user = null;
                 try
                 {
-                    DbContext.Add(user);
-                    DbContext.SaveChanges();
-                    context.Response.StatusCode = (int)HttpStatusCode.OK;
+                    user = JsonConvert.DeserializeObject<User>(json);
                 }
                 catch
                 {
-                    context.Response.StatusCode = (int)HttpStatusCode.Conflict;
+                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    return;
+                }
+
+                if (user != null)
+                {
+                    try
+                    {
+                        DbContext.Add(user);
+                        DbContext.SaveChanges();
+                        context.Response.StatusCode = (int)HttpStatusCode.OK;
+                    }
+                    catch
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.Conflict;
+                    }
+                }
+                else
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                }
+            }
+            else if(title == "tweet")
+            {
+                if (string.IsNullOrEmpty(username))
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.NoContent;
+                    return;
+                }
+
+                var user = DbContext.User.FirstOrDefault(u => u.Username == username);
+
+                if(user == null)
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                    return;
+                }
+
+                Tweet tweet = null;
+                try
+                {
+                    tweet = JsonConvert.DeserializeObject<Tweet>(json);
+                }
+                catch
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    return;
+                }
+
+                user.Tweets.Add(tweet);
+
+                try
+                {
+                    DbContext.Update(user);
+                    DbContext.SaveChanges();
+                    client.PostAsync($"{uri}?username={username}&title=tweet", new StringContent(json)).Wait();
+                }
+                catch 
+                {
                 }
             }
             else
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
             }
         }
         private static void Delete(HttpListenerContext context)
@@ -168,17 +225,25 @@ namespace Server
 
         private static void IncreaseViewCount(User user)
         {
-            user.ViewCount++;
-            DbContext.Update(user);
-            DbContext.SaveChanges();
+            try
+            {
+                user.ViewCount++;
+                DbContext.Update(user);
+                DbContext.SaveChanges();
+            }
+            catch { }
         }
 
-        private static void TrySaveCasheServer(User user)
+        private async static Task TrySaveCasheServer(User user)
         {
             if(user.ViewCount > 6)
             {
                 var json = JsonConvert.SerializeObject(user);
-                client.PostAsync(uri, new StringContent(json));
+                try
+                {
+                    await client.PostAsync(uri, new StringContent(json));
+                }
+                catch { }
             }
         }
 

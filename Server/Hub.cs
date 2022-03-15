@@ -18,7 +18,7 @@ namespace Server
 
         public HttpListenerContext Context { get; set; }
 
-        public Action<HttpListenerContext> Get;
+        public Func<HttpListenerContext, Task> Get;
 
         public Action<HttpListenerContext> Post;
 
@@ -48,7 +48,7 @@ namespace Server
                     if (request.HttpMethod == HttpMethod.Post.Method)
                         Post?.Invoke(Context);
                     else if (request.HttpMethod == HttpMethod.Get.Method)
-                        Get?.Invoke(Context);
+                         Get?.Invoke(Context).Wait();
                     else if (request.HttpMethod == HttpMethod.Delete.Method)
                         Delete?.Invoke(Context);
                     else if (request.HttpMethod == HttpMethod.Put.Method)

@@ -19,5 +19,10 @@ namespace Server.Models
         public int ViewCount { get; set; }
 
         public List<Tweet> Tweets { get; set; }
+
+        public User()
+        {
+            Tweets = new();
+        }
     }
 }

@@ -18,7 +18,7 @@ namespace Server.Models
 
         public int ViewCount { get; set; }
 
-        public List<Tweet> Tweet { get; set; }
+        public List<Tweet> Tweets { get; set; }
 
         public override string ToString()
         {

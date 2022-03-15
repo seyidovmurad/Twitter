@@ -30,36 +30,36 @@ namespace Client
         public MainWindow()
         {
             InitializeComponent();
-            GetUser();
+            MainFrame.Content = new LoginView(client) { Uri = uri };
         }
 
         public void GetUser()
         {
-            var user = new User { Name = "Murad", Password = "Murad123", Username = "fadfrad", ViewCount = 5, Surname = "Seyidov" };
+            //var user = new User { Name = "Murad", Password = "Murad123", Username = "fadfrad", ViewCount = 5, Surname = "Seyidov" };
 
-            try
-            {
-                var response = client.PutAsync(uri, new StringContent(JsonConvert.SerializeObject(user))).Result;
-                txt.Text = response.StatusCode.ToString();
-            }
-            catch
-            {
-                txt.Text = "No Network";
-            }
-            //var res = client.GetAsync($"{uri}?id=3").GetAwaiter().GetResult();
-
-            //if(res.StatusCode == System.Net.HttpStatusCode.OK)
+            //try
             //{
-            //    var json = res.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-            //    var user = JsonConvert.DeserializeObject<User>(json);
+            //    var response = client.PutAsync(uri, new StringContent(JsonConvert.SerializeObject(user))).Result;
+            //    txt.Text = response.StatusCode.ToString();
+            //}
+            //catch
+            //{
+            //    txt.Text = "No Network";
+            //}
+            //var res = client.getasync($"{uri}?id=13").getawaiter().getresult();
+
+            //if (res.statuscode == system.net.httpstatuscode.ok)
+            //{
+            //    var json = res.content.readasstringasync().getawaiter().getresult();
+            //    var user = jsonconvert.deserializeobject<user>(json);
             //    if (user != null)
-            //        txt.Text = user.ToString();
+            //        txt.text = user.tostring();
             //    else
-            //        txt.Text = "null";
+            //        txt.text = "null";
             //}
             //else
             //{
-            //    txt.Text = res.StatusCode.ToString();
+            //    txt.text = res.statuscode.tostring();
             //}
         }
     }
